@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const  port = process.env.PORT || 5000;
  
@@ -38,16 +38,73 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+
+    //database collection
     const database = client.db("usersDB");
     const haiku = database.collection("users");
+
+
+
+    //read operations
+    app.get('/users', async(req, res)=>{
+        const cursor = haiku.find();
+        console.log(cursor);
+        const result = await cursor.toArray();
+        res.send(result);
+    })
+
+
+    //update operations
+    app.get('/users/:id', async(req, res)=>{
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)};
+        const results = await haiku.findOne(query);
+        res.send(results);
+
+    })
+
 
     // create operations
     app.post('/users', async(req, res) => {
         const user = req.body;
-        console.log('check user',user);
+        // console.log('check user',user);
         const result = await haiku.insertOne(user);
         res.send(result);
 
+    })
+
+
+
+    //specific user update with put
+    app.put('/users/:id', async(req, res) => {
+        const id = req.params.id;
+        const user = req.body;
+        console.log( id, user);
+
+
+        const filter = {_id: new ObjectId(id)}
+        const option = {upsert: true}
+        const updateUser = {
+            $set: {
+                name: user.name,
+                email: user.email,
+              },
+        };
+
+        // update user 
+        const result = await haiku.updateOne(filter, updateUser, option);
+        res.send(result);
+    })
+
+
+    //Delete operations
+    app.delete('/users/:id', async(req, res) => {
+        console.log(req);
+        const id = req.params.id;
+        // console.log('please delete form ', id);
+        const query = {_id: new ObjectId(id)};
+        const result = await haiku.deleteOne(query);
+        res.send(result);
     })
 
 
